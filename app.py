@@ -13,6 +13,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
+# Ensure upload folder exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
 db = SQLAlchemy(app)
 
 # Razorpay setup
@@ -74,10 +77,9 @@ def register():
         photo_path = None
         if photo and photo.filename != '':
             filename = secure_filename(photo.filename)
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             photo.save(file_path)
-            photo_path = file_path  # Save path in DB
+            photo_path = file_path
 
         # Create Razorpay order
         amount_paise = amount_rupees * 100
@@ -101,29 +103,33 @@ def register():
 
 @app.route('/payment_success', methods=['POST'])
 def payment_success():
-    payment_id = request.form.get('razorpay_payment_id')
-    name = request.form.get('name')
-    email = request.form.get('email')
-    phone = request.form.get('phone')
-    age = request.form.get('age')
-    gender = request.form.get('gender')
-    membership = request.form.get('membership')
-    photo_path = request.form.get('photo_path')  # Hidden input from payment.html
+    try:
+        payment_id = request.form.get('razorpay_payment_id')
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        age = int(request.form.get('age'))
+        gender = request.form.get('gender')
+        membership = request.form.get('membership')
+        photo_path = request.form.get('photo_path') or None
 
-    member = Member(
-        name=name,
-        email=email,
-        phone=phone,
-        age=age,
-        gender=gender,
-        membership=membership,
-        payment_id=payment_id,
-        photo_path=photo_path
-    )
-    db.session.add(member)
-    db.session.commit()
+        member = Member(
+            name=name,
+            email=email,
+            phone=phone,
+            age=age,
+            gender=gender,
+            membership=membership,
+            payment_id=payment_id,
+            photo_path=photo_path
+        )
+        db.session.add(member)
+        db.session.commit()
+        return redirect('/thankyou')
 
-    return redirect('/thankyou')
+    except Exception as e:
+        print(f"[ERROR] /payment_success failed: {e}")
+        return "Something went wrong after payment.", 500
 
 @app.route('/thankyou')
 def thankyou():
