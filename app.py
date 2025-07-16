@@ -134,13 +134,16 @@ def payment_success():
 @app.route('/thankyou')
 def thankyou():
     return render_template('thankyou.html')
+from sqlalchemy import text
+
 @app.route('/debug/tables')
 def debug_tables():
     try:
-        result = db.engine.execute(
-            "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
-        )
-        tables = [row[0] for row in result]
+        with db.engine.connect() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
+            ))
+            tables = [row[0] for row in result]
         return "<h3>✅ Tables in PostgreSQL:</h3><ul>" + "".join(f"<li>{t}</li>" for t in tables) + "</ul>"
     except Exception as e:
         return f"<h3>❌ Error:</h3><pre>{e}</pre>"
