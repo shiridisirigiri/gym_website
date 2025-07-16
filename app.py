@@ -5,13 +5,8 @@ import os
 
 app = Flask(__name__)
 
-razorpay_client = razorpay.Client(
-    auth=(
-        os.environ.get("RAZORPAY_KEY_ID"),
-        os.environ.get("RAZORPAY_KEY_SECRET")
-    )
-)
-
+# Initialize Razorpay client
+razorpay_client = razorpay.Client(auth=("rzp_test_qM0wzz6NIH2B7q", "jvIdIUw6eyCChirrLwzBgHrt"))
 
 def init_db():
     try:
@@ -127,8 +122,6 @@ def payment_success():
 def thankyou():
     return render_template('thankyou.html')
 
-
 if __name__ == '__main__':
     init_db()
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True)
