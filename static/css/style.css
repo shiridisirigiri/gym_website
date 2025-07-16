@@ -1,0 +1,40 @@
+/* Remove default body margin, ensure full height, prevent horizontal scroll */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow-x: hidden;
+}
+
+/* Optional: light background for sections other than the hero */
+body {
+    background-color: #f8f9fa;
+}
+
+/* Consistent text color for headers */
+ h2, h5 {
+    color: #0b0a0a; /* White text on dark background for clarity */
+}
+.inner-page h1 {
+    color: black;
+}
+
+/* Home page h1 override */
+.home-page h1 {
+    color: white;
+}
+
+/* Fullscreen hero background without scrolling */
+.home-background {
+    background: url("../images/bg.jpg") no-repeat center center fixed;
+    background-size: cover;
+    height: 100vh; /* Full viewport height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: white;
+    text-shadow: 1px 1px 3px black;
+    text-align: center;
+    padding: 0;
+}

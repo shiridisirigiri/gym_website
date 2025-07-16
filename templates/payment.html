@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+    <h2>Complete Your Payment</h2>
+    <p>Amount: ₹{{ amount }}</p>
+    <button id="rzp-button" class="btn btn-success">Pay Now</button>
+
+    <form id="payment-form" action="/payment_success" method="POST" style="display: none;">
+        <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+        <input type="hidden" name="name" value="{{ name }}">
+        <input type="hidden" name="email" value="{{ email }}">
+        <input type="hidden" name="phone" value="{{ phone }}">
+        <input type="hidden" name="age" value="{{ age }}">
+        <input type="hidden" name="gender" value="{{ gender }}">
+        <input type="hidden" name="membership" value="{{ membership }}">
+    </form>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+var options = {
+    "key": "rzp_test_qM0wzz6NIH2B7q",
+    "amount": "{{ amount * 100 }}",
+    "currency": "INR",
+    "name": "FIT 365",
+    "description": "Membership Payment",
+    "order_id": "{{ payment['id'] }}",
+    "handler": function (response) {
+        document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+        document.getElementById('payment-form').submit();
+    },
+    "prefill": {
+        "name": "{{ name }}",
+        "email": "{{ email }}",
+        "contact": "{{ phone }}"
+    },
+    "theme": {
+        "color": "#3399cc"
+    }
+    
+};
+var rzp1 = new Razorpay(options);
+document.getElementById('rzp-button').onclick = function(e){
+    rzp1.open();
+    e.preventDefault();
+}
+</script>
+{% endblock %}

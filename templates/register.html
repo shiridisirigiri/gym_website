@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card p-4 shadow" style="max-width: 600px; margin: auto;">
+        <h2 class="text-center">Join Our Gym</h2>
+        <form method="post">
+            <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-control" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" name="email" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Phone</label>
+                <input type="tel" class="form-control" name="phone" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Age</label>
+                <input type="number" class="form-control" name="age" min="10" max="80" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Gender</label>
+                <select class="form-select" name="gender" required>
+                    <option disabled selected>Select</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Membership</label>
+                <select class="form-select" name="membership" id="membership" onchange="updateAmount()" required>
+                    <option disabled selected>Select</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                    <option value="Half-Yearly">Half-Yearly</option>
+                    <option value="Yearly">Yearly</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Amount</label>
+                <p id="amountDisplay">₹0</p>
+                <input type="hidden" name="amount" id="amountInput">
+            </div>
+            <button class="btn btn-success">Register</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function updateAmount() {
+        const plan = document.getElementById("membership").value;
+        const amountDisplay = document.getElementById("amountDisplay");
+        const amountInput = document.getElementById("amountInput");
+
+        let amount = 0;
+        if (plan === "Monthly") amount = 500;
+        else if (plan === "Quarterly") amount = 1400;
+        else if (plan === "Half-Yearly") amount = 2700;
+        else if (plan === "Yearly") amount = 5000;
+
+        amountDisplay.textContent = "₹" + amount;
+        amountInput.value = amount;
+    }
+</script>
+{% endblock %}
