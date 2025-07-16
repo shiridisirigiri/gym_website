@@ -5,8 +5,13 @@ import os
 
 app = Flask(__name__)
 
-# Initialize Razorpay client
-razorpay_client = razorpay.Client(auth=("rzp_test_qM0wzz6NIH2B7q", "jvIdIUw6eyCChirrLwzBgHrt"))
+razorpay_client = razorpay.Client(
+    auth=(
+        os.environ.get("RAZORPAY_KEY_ID"),
+        os.environ.get("RAZORPAY_KEY_SECRET")
+    )
+)
+
 
 def init_db():
     try:
