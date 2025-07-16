@@ -1,46 +1,41 @@
 from flask import Flask, render_template, request, redirect
-import sqlite3
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.utils import secure_filename
 import razorpay
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-# Initialize Razorpay client
+db = SQLAlchemy(app)
+
+# Razorpay setup
 razorpay_client = razorpay.Client(auth=("rzp_test_qM0wzz6NIH2B7q", "jvIdIUw6eyCChirrLwzBgHrt"))
 
-def init_db():
-    try:
-        db_path = os.path.join(os.getcwd(), 'gym.db')
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
+# Database Models
+class Contact(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    message = db.Column(db.Text, nullable=False)
 
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS contacts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                message TEXT NOT NULL
-            )
-        ''')
-
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS members (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                phone TEXT NOT NULL,
-                age INTEGER NOT NULL,
-                gender TEXT NOT NULL,
-                membership TEXT NOT NULL,
-                payment_id TEXT,
-                joined_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"[ERROR] DB Init Failed: {e}")
+class Member(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), nullable=False)
+    age = db.Column(db.Integer, nullable=False)
+    gender = db.Column(db.String(10), nullable=False)
+    membership = db.Column(db.String(50), nullable=False)
+    payment_id = db.Column(db.String(100))
+    photo_path = db.Column(db.String(255))  # New: Save image path
+    joined_on = db.Column(db.DateTime, server_default=db.func.now())
 
 @app.route('/')
 def index():
@@ -57,12 +52,9 @@ def contact():
         email = request.form['email']
         message = request.form['message']
 
-        conn = sqlite3.connect('gym.db')
-        c = conn.cursor()
-        c.execute('INSERT INTO contacts (name, email, message) VALUES (?, ?, ?)', (name, email, message))
-        conn.commit()
-        conn.close()
-
+        contact = Contact(name=name, email=email, message=message)
+        db.session.add(contact)
+        db.session.commit()
         return redirect('/thankyou')
     return render_template('contact.html')
 
@@ -76,9 +68,19 @@ def register():
         gender = request.form.get('gender')
         membership = request.form.get('membership')
         amount_rupees = int(request.form.get('amount'))
-        amount_paise = amount_rupees * 100  # Razorpay uses paise
+        photo = request.files['photo']
+
+        # Save photo
+        photo_path = None
+        if photo and photo.filename != '':
+            filename = secure_filename(photo.filename)
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            photo.save(file_path)
+            photo_path = file_path  # Save path in DB
 
         # Create Razorpay order
+        amount_paise = amount_rupees * 100
         payment = razorpay_client.order.create({
             "amount": amount_paise,
             "currency": "INR",
@@ -93,8 +95,8 @@ def register():
                                age=age,
                                gender=gender,
                                membership=membership,
-                               amount=amount_rupees)
-
+                               amount=amount_rupees,
+                               photo_path=photo_path)
     return render_template('register.html')
 
 @app.route('/payment_success', methods=['POST'])
@@ -106,15 +108,20 @@ def payment_success():
     age = request.form.get('age')
     gender = request.form.get('gender')
     membership = request.form.get('membership')
+    photo_path = request.form.get('photo_path')  # Hidden input from payment.html
 
-    conn = sqlite3.connect('gym.db')
-    c = conn.cursor()
-    c.execute('''
-        INSERT INTO members (name, email, phone, age, gender, membership, payment_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (name, email, phone, age, gender, membership, payment_id))
-    conn.commit()
-    conn.close()
+    member = Member(
+        name=name,
+        email=email,
+        phone=phone,
+        age=age,
+        gender=gender,
+        membership=membership,
+        payment_id=payment_id,
+        photo_path=photo_path
+    )
+    db.session.add(member)
+    db.session.commit()
 
     return redirect('/thankyou')
 
@@ -123,6 +130,7 @@ def thankyou():
     return render_template('thankyou.html')
 
 if __name__ == '__main__':
-    init_db()
-    port = int(os.environ.get("PORT", 5000))  # Use PORT from env or default 5000
+    with app.app_context():
+        db.create_all()
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

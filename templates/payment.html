@@ -14,6 +14,7 @@
         <input type="hidden" name="age" value="{{ age }}">
         <input type="hidden" name="gender" value="{{ gender }}">
         <input type="hidden" name="membership" value="{{ membership }}">
+        <input type="hidden" name="photo_path" value="{{ photo_path }}"> <!-- ✅ Photo path here -->
     </form>
 </div>
 
@@ -38,7 +39,6 @@ var options = {
     "theme": {
         "color": "#3399cc"
     }
-    
 };
 var rzp1 = new Razorpay(options);
 document.getElementById('rzp-button').onclick = function(e){
